@@ -6,11 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 
 import com.krakdev.videojuegos.entidades.Videojuego;
@@ -19,10 +19,11 @@ import com.krakdev.videojuegos.entidades.Videojuego;
 public class VideojuegoJdbc {
 
     private static final Logger LOG =
-            Logger.getLogger(VideojuegoJdbc.class.getName());
+            LogManager.getLogger(VideojuegoJdbc.class);
 
     private final DataSource dataSource;
 
+    // Constructor
     public VideojuegoJdbc(DataSource dataSource) {
         this.dataSource = dataSource;
     }
@@ -37,8 +38,6 @@ public class VideojuegoJdbc {
                 + "(codigo, nombre, plataforma, precio, disponible, genero) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
 
-       
-        
         try {
             con = dataSource.getConnection();
             LOG.info("Conexion realizada");
@@ -55,27 +54,31 @@ public class VideojuegoJdbc {
             int filas = ps.executeUpdate();
 
             if (filas > 0) {
-                LOG.info("Videojuego insertado");
+                LOG.info("Videojuego insertado correctamente");
                 return videojuego;
             }
 
+            LOG.warn("No se pudo insertar el videojuego");
+            return null;
+
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error al insertar videojuego", e);
+            LOG.error("Error al insertar videojuego", e);
+            return null;
 
         } finally {
             try {
                 if (ps != null) {
-                	ps.close();
+                    ps.close();
                 }
+
                 if (con != null) {
                     con.close();
                 }
+
             } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Error al cerrar recursos", e);
+                LOG.error("Error al cerrar recursos de insercion", e);
             }
         }
-
-        return null;
     }
 
     // METODO LISTAR
@@ -85,7 +88,7 @@ public class VideojuegoJdbc {
 
         Connection con = null;
         PreparedStatement ps = null;
-        ResultSet resultado = null;
+        ResultSet rs = null;
 
         String sql = "SELECT codigo, nombre, plataforma, precio, "
                 + "disponible, genero FROM videojuegos";
@@ -95,38 +98,43 @@ public class VideojuegoJdbc {
             LOG.info("Conexion realizada");
 
             ps = con.prepareStatement(sql);
-            resultado = ps.executeQuery();
+            rs = ps.executeQuery();
 
-            while (resultado.next()) {
+            while (rs.next()) {
 
                 Videojuego videojuego = new Videojuego();
 
-                videojuego.setCodigo(resultado.getString("codigo"));
-                videojuego.setNombre(resultado.getString("nombre"));
-                videojuego.setPlataforma(resultado.getString("plataforma"));
-                videojuego.setPrecio(resultado.getDouble("precio"));
-                videojuego.setDisponible(resultado.getBoolean("disponible"));
-                videojuego.setGenero(resultado.getString("genero"));
+                videojuego.setCodigo(rs.getString("codigo"));
+                videojuego.setNombre(rs.getString("nombre"));
+                videojuego.setPlataforma(rs.getString("plataforma"));
+                videojuego.setPrecio(rs.getDouble("precio"));
+                videojuego.setDisponible(rs.getBoolean("disponible"));
+                videojuego.setGenero(rs.getString("genero"));
 
                 videojuegos.add(videojuego);
             }
 
+            LOG.info("Videojuegos consultados: {}", videojuegos.size());
+
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error al listar videojuegos", e);
+            LOG.error("Error al listar videojuegos", e);
 
         } finally {
             try {
-                if (resultado != null) {
-                    resultado.close();
+                if (rs != null) {
+                    rs.close();
                 }
+
                 if (ps != null) {
-                	ps.close();
+                    ps.close();
                 }
+
                 if (con != null) {
                     con.close();
                 }
+
             } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Error al cerrar recursos", e);
+                LOG.error("Error al cerrar recursos de consulta", e);
             }
         }
 
@@ -138,7 +146,7 @@ public class VideojuegoJdbc {
 
         Connection con = null;
         PreparedStatement ps = null;
-        ResultSet resultado = null;
+        ResultSet rs = null;
 
         Videojuego videojuego = null;
 
@@ -152,36 +160,44 @@ public class VideojuegoJdbc {
             ps = con.prepareStatement(sql);
             ps.setString(1, codigo);
 
-            resultado = ps.executeQuery();
+            rs = ps.executeQuery();
 
-            if (resultado.next()) {
+            if (rs.next()) {
 
                 videojuego = new Videojuego();
 
-                videojuego.setCodigo(resultado.getString("codigo"));
-                videojuego.setNombre(resultado.getString("nombre"));
-                videojuego.setPlataforma(resultado.getString("plataforma"));
-                videojuego.setPrecio(resultado.getDouble("precio"));
-                videojuego.setDisponible(resultado.getBoolean("disponible"));
-                videojuego.setGenero(resultado.getString("genero"));
+                videojuego.setCodigo(rs.getString("codigo"));
+                videojuego.setNombre(rs.getString("nombre"));
+                videojuego.setPlataforma(rs.getString("plataforma"));
+                videojuego.setPrecio(rs.getDouble("precio"));
+                videojuego.setDisponible(rs.getBoolean("disponible"));
+                videojuego.setGenero(rs.getString("genero"));
+
+                LOG.info("Videojuego encontrado: {}", codigo);
+
+            } else {
+                LOG.warn("No se encontro el videojuego: {}", codigo);
             }
 
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error al buscar videojuego", e);
+            LOG.error("Error al buscar videojuego", e);
 
         } finally {
             try {
-                if (resultado != null) {
-                    resultado.close();
+                if (rs != null) {
+                    rs.close();
                 }
+
                 if (ps != null) {
-                	ps.close();
+                    ps.close();
                 }
+
                 if (con != null) {
                     con.close();
                 }
+
             } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Error al cerrar recursos", e);
+                LOG.error("Error al cerrar recursos de busqueda", e);
             }
         }
 
@@ -213,29 +229,33 @@ public class VideojuegoJdbc {
             int filas = ps.executeUpdate();
 
             if (filas > 0) {
-                LOG.info("Videojuego actualizado");
+                LOG.info("Videojuego actualizado: {}",
+                        videojuego.getCodigo());
                 return videojuego;
-            } else {
-                LOG.warning("No se encontro el videojuego para actualizar");
             }
 
+            LOG.warn("No se encontro el videojuego para actualizar: {}",
+                    videojuego.getCodigo());
+            return null;
+
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error al actualizar videojuego", e);
+            LOG.error("Error al actualizar videojuego", e);
+            return null;
 
         } finally {
             try {
                 if (ps != null) {
-                	ps.close();
+                    ps.close();
                 }
+
                 if (con != null) {
                     con.close();
                 }
+
             } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Error al cerrar recursos", e);
+                LOG.error("Error al cerrar recursos de actualizacion", e);
             }
         }
-
-        return null;
     }
 
     // METODO ELIMINAR
@@ -256,30 +276,31 @@ public class VideojuegoJdbc {
             int filas = ps.executeUpdate();
 
             if (filas > 0) {
-                LOG.info("Videojuego eliminado");
+                LOG.info("Videojuego eliminado: {}", codigo);
                 return true;
-            } else {
-                LOG.warning("No se encontro el videojuego para eliminar");
-                return false;
             }
 
+            LOG.warn("No se encontro el videojuego para eliminar: {}",
+                    codigo);
+            return false;
+
         } catch (SQLException e) {
-            LOG.log(Level.SEVERE, "Error al eliminar videojuego", e);
+            LOG.error("Error al eliminar videojuego", e);
+            return false;
 
         } finally {
             try {
                 if (ps != null) {
-                	ps.close();
+                    ps.close();
                 }
+
                 if (con != null) {
                     con.close();
                 }
+
             } catch (SQLException e) {
-                LOG.log(Level.SEVERE, "Error al cerrar recursos", e);
+                LOG.error("Error al cerrar recursos de eliminacion", e);
             }
         }
-
-        return false;
     }
 }
-
