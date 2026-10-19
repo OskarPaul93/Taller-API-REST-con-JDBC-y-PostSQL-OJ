@@ -7,4 +7,9 @@ CREATE TABLE videojuegos (
     genero VARCHAR(50)
 );
 
-select * from videojuegos
+select * from videojuegos;
+
+insert into videojuegos
+(codigo, nombre, plataforma, precio, disponible, genero)
+values
+('PES','eFootball','steam',0, true, null);
